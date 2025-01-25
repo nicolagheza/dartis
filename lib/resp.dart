@@ -96,12 +96,12 @@ class ArrayRESPValue extends RESPValue {
 }
 
 class RESPWriter {
-  final Socket socket;
+  final IOSink writer;
 
-  const RESPWriter(this.socket);
+  const RESPWriter(this.writer);
 
   void write(RESPValue v) {
-    socket.add(v.marshal());
+    writer.add(v.marshal());
   }
 }
 

@@ -1,4 +1,5 @@
 // import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -10,21 +11,35 @@ void main(List<String> arguments) {
   ServerSocket.bind(InternetAddress.anyIPv4, 6379).then((serverSocket) {
     serverSocket.listen((socket) {
       print("Client connected");
-      socket.listen((Uint8List data) async {
-        // final stream = Stream.fromIterable(data);
-        // final iterator = StreamIterator(stream);
 
-        // final resp = RESPParser(iterator);
-        final writer = RESPWriter(socket);
-        // Ignore request and send back a PONG
-        final response = StringRESPValue("PONG");
+      final buffer = StreamController<int>();
 
-        writer.write(response);
+      socket.listen((Uint8List data) {
+        buffer.addStream(Stream.fromIterable(data));
       }, onError: (e) {
         print('Error $e');
+        buffer.close();
       }, onDone: () {
         print('Client disconnected');
+        buffer.close();
         socket.close();
+      });
+
+      Future(() async {
+        final parser = RESPParser(StreamIterator(buffer.stream));
+        final writer = RESPWriter(socket);
+        try {
+          while (true) {
+            final request = await parser.read();
+
+            print('Type: ${request.typ}');
+            // Ignore request and send back a PONG
+            final response = StringRESPValue("PONG");
+            writer.write(response);
+          }
+        } catch (e) {
+          print('Parsing error: $e');
+        }
       });
     });
   });
