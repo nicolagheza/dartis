@@ -3,7 +3,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dartis/resp.dart';
+import 'package:dartis/commands.dart';
+import 'package:dartis/protocol.dart';
 
 void main(List<String> arguments) {
   print('listening on port :6379');
@@ -30,11 +31,14 @@ void main(List<String> arguments) {
         final writer = RESPWriter(socket);
         try {
           while (true) {
-            final request = await parser.read();
+            final request = await parser.read() as ArrayRESPValue;
 
-            print('Type: ${request.typ}');
-            // Ignore request and send back a PONG
-            final response = StringRESPValue("PONG");
+            final cmd = (request.array[0] as BulkRESPValue).bulk.toUpperCase();
+
+            final handler = DartisCommands.handlers[cmd];
+            final response = handler != null
+                ? handler(request.array.sublist(1))
+                : ErrorRESPValue('ERR unknown command');
             writer.write(response);
           }
         } catch (e) {
