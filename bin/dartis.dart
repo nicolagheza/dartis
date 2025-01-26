@@ -37,7 +37,7 @@ void main(List<String> arguments) {
 
             final handler = DartisCommands.handlers[cmd];
             final response = handler != null
-                ? handler(request.array.sublist(1))
+                ? await handler(request.array.sublist(1))
                 : ErrorRESPValue('ERR unknown command');
             writer.write(response);
           }
